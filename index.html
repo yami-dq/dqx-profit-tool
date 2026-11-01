@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
+  <title>培養利益計算</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0d1117" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="app-header">
+      <div>
+        <h1>培養利益計算</h1>
+        <div class="subtitle">輝晶培養 利益シミュレーター</div>
+      </div>
+      <button class="terms-btn" onclick="openTerms()" aria-label="利用規約・免責事項">規約</button>
+    </header>
+
+    <div class="mode-switch">
+      <button id="modeKisei" class="mode-btn active" onclick="setMode('kisei')">輝晶核</button>
+      <button id="modeSenkisei" class="mode-btn" onclick="setMode('senkisei')">閃輝晶核</button>
+    </div>
+
+    <nav class="tabbar">
+      <button id="tabCounter" class="tab-btn active" onclick="setTab('counter')">周回</button>
+      <button id="tabAnalysis" class="tab-btn" onclick="setTab('analysis')">利益分析</button>
+      <button id="tabSettings" class="tab-btn" onclick="setTab('settings')">設定</button>
+    </nav>
+
+    <main>
+      <section id="counterView" class="view">
+        <div class="run-summary">
+          <div class="run-number"><strong id="roundCount">0</strong><span>戦</span></div>
+          <div id="currentProfit" class="current-profit">0 G</div>
+          <div class="profit-caption">現在利益</div>
+        </div>
+
+        <div class="share-counts" aria-label="PT報告用カウント">
+          <div><span>45</span><strong id="count45">0</strong></div>
+          <div><span>75</span><strong id="count75">0</strong></div>
+          <div><span>核</span><strong id="countCore">0</strong></div>
+        </div>
+        <div class="wipe-inline">全滅 <strong id="countWipe">0</strong></div>
+
+        <div id="timerTools" class="timer-tools"><button id="battleStartBtn" class="timer-btn primary" onclick="startBattle()">計測開始</button><button id="cottonBtn" class="timer-btn" onclick="useCotton()">わたあめ</button><button class="timer-btn finish" onclick="finishMeal()">計測終了</button></div>
+        <div class="timer-status-row"><div id="battleTimer" class="battle-timer">待機中</div><div id="cottonTimer" class="cotton-timer hidden">-</div></div>
+        <div id="lastInput" class="last-input">直前：なし</div>
+
+        <div class="drop-grid">
+          <button id="btn45" class="drop-btn" onclick="addDrop('45')"><span>45</span></button>
+          <button id="btn75" class="drop-btn" onclick="addDrop('75')"><span>75</span></button>
+          <button id="btnCore" class="drop-btn" onclick="addDrop('core')"><span>核</span></button>
+          <button id="btnWipe" class="drop-btn wipe" onclick="addDrop('wipe')"><span>全滅</span></button>
+        </div>
+
+        <div class="counter-actions"><button class="undo-btn" onclick="undoLast()">↶ 1つ戻す</button><button class="reset-btn" onclick="resetRun()">リセット</button></div>
+
+        <div class="card compact-card actual-card">
+          <div class="card-title-row"><h2>実測値</h2><span id="sampleCount" class="pill">0戦</span></div>
+          <div class="actual-stats">
+            <div><span>戦闘数</span><strong id="actualBattleCount">0戦</strong></div>
+            <div><span>平均破片</span><strong id="actualFragments">-</strong></div>
+            <div><span>破片合計</span><strong id="actualFragmentTotal">0個</strong></div>
+            <div><span>交換可能</span><strong id="actualExchangeCores">0核</strong></div>
+            <div><span>核ドロップ</span><strong id="actualCoreDrops">0個</strong></div>
+            <div><span>獲得核合計</span><strong id="actualTotalCores">0核</strong></div>
+            <div><span>余り破片</span><strong id="actualRemainder">0個</strong></div>
+            <div><span>平均入力間隔</span><strong id="avgBattleTime">-</strong></div>
+            <div><span>実作業時間</span><strong id="mealTime">-</strong></div>
+            <div><span>実測時給</span><strong id="hourlyProfit">-</strong></div>
+          </div>
+        </div>
+
+        <div class="card chart-card run-chart-card">
+          <div class="card-title-row"><h2>今回の利益推移</h2></div>
+          <canvas id="runProfitChart" width="720" height="400"></canvas>
+          <div class="chart-note">1戦ごとの累積実利益と、同じ戦闘数での期待利益</div>
+        </div>
+
+      </section>
+
+      <section id="analysisView" class="view hidden">
+        <div class="card compact-card">
+          <div class="analysis-controls">
+            <label>持ち寄り数
+              <div class="stepper"><button onclick="changeMealRuns(-1)">−</button><strong id="mealRuns">5餅</strong><button onclick="changeMealRuns(1)">＋</button></div>
+            </label>
+            <label>最低利益
+              <div class="money-input"><input id="targetProfit" type="number" inputmode="numeric" step="10000" /><span>G</span></div>
+            </label>
+          </div>
+
+          <div class="analysis-summary">
+            <div><span>期待利益</span><strong id="expectedProfit">0 G</strong></div>
+            <div><span>黒字細胞上限</span><strong id="breakEvenCell">0 G</strong></div>
+            <div><span id="targetCellLabel">目標利益の細胞上限</span><strong id="targetCellPrice">0 G</strong></div>
+          </div>
+        </div>
+
+        <div class="card chart-card">
+          <div class="card-title-row"><h2>細胞価格と利益</h2><button class="share-btn" onclick="shareProfitChart()">共有</button></div>
+          <div class="chart-thresholds"><div><span>現在価格</span><strong id="chartCurrentCell">0 G</strong></div><div><span>最低利益ライン</span><strong id="chartTargetCell">0 G</strong></div><div><span>黒字限界</span><strong id="chartBreakEvenCell">0 G</strong></div></div><canvas id="priceProfitChart" width="720" height="440"></canvas>
+          <div class="chart-note">核価格と現在の設定をもとにした1人あたり期待利益</div>
+        </div>
+
+        <div class="card compact-card battle-log-card">
+          <div class="card-title-row"><h2>戦闘ログ</h2><span id="logCount" class="pill">0戦</span></div>
+          <div class="battle-log-head"><span>戦闘</span><span>結果</span><span>累積利益</span></div>
+          <div id="battleLog" class="battle-log"><div class="empty-log">まだ記録がありません</div></div>
+        </div>
+      </section>
+
+      <section id="settingsView" class="view hidden">
+        <div class="card">
+          <h2>価格設定</h2>
+          <div class="form-row"><label for="corePrice">核価格</label><input id="corePrice" type="number" inputmode="numeric" /></div>
+          <div class="form-row"><label for="fragmentPrice">破片価格</label><input id="fragmentPrice" type="number" inputmode="numeric" /></div>
+          <div class="form-row"><label for="cellPrice">細胞価格</label><input id="cellPrice" type="number" inputmode="numeric" /></div>
+          <h2 class="sub-heading">販売方法</h2>
+          <div class="sale-method">
+            <button id="saleBazaar" class="sale-btn active" onclick="setSaleMethod('bazaar')">バザー <small>-5%</small></button>
+            <button id="saleMoomon" class="sale-btn" onclick="setSaleMethod('moomon')">モーモン <small>手数料なし</small></button>
+          </div>
+        </div>
+
+        <div class="card settings-list">
+          <label class="switch-row"><span>入力確認音</span><input id="soundEnabled" type="checkbox" onchange="setSoundEnabled(this.checked)" /></label>
+          <button class="danger-line" onclick="resetAll()">現在モードの記録をリセット</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+  <div id="termsModal" class="modal hidden">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeTerms()">×</button>
+      <h2>利用規約・免責事項</h2>
+      <h3>利用規約</h3>
+      <p>本ツールは「ドラゴンクエストX」の輝晶培養・閃輝培養における記録および利益計算を補助するための非公式ツールです。本ツールの利用者は、表示内容を参考情報として自己の判断と責任で利用するものとします。</p>
+      <p>本ツールの内容・計算方法・機能は、ゲーム内仕様や相場の変更等に応じて予告なく変更される場合があります。法令、公序良俗またはゲームの利用規約に反する目的での利用は行わないでください。</p>
+      <h3>免責事項</h3>
+      <p>本ツールが表示する利益、期待利益、黒字限界、価格上限その他の数値は、入力された価格と本ツール内の計算モデルに基づく参考値です。実際のドロップ、相場、売却価格または利益を保証するものではありません。</p>
+      <p>相場変動、ゲーム仕様の変更、入力ミス、計算誤差、ブラウザや端末の不具合、保存データの消失その他、本ツールの利用または利用不能によって生じた損害について、作者は責任を負いません。重要な判断を行う際はゲーム内の最新情報をご自身でも確認してください。</p>
+      <p>記録・設定は原則として利用端末のブラウザ内（ローカルストレージ）に保存されます。ブラウザデータの削除等により失われる場合があります。</p>
+      <p>本ツールは個人制作の非公式ツールであり、株式会社スクウェア・エニックスその他の「ドラゴンクエストX」関係者とは関係ありません。「ドラゴンクエスト」および関連する名称・権利は各権利者に帰属します。</p>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
