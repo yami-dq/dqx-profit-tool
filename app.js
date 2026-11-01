@@ -74,15 +74,30 @@ function setSoundEnabled(v){ state.soundEnabled=v; saveState(); }
 function changeMealRuns(delta){ currentMode().mealRuns=Math.max(1,Math.min(99,currentMode().mealRuns+delta)); saveState(); render(); }
 
 let audioCtx;
-function playConfirmSound(){
+function ensureAudioContext(){
+  const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+  if(!AudioContextClass) return null;
+  if(!audioCtx || audioCtx.state==="closed") audioCtx=new AudioContextClass();
+  return audioCtx;
+}
+async function playConfirmSound(){
   if(!state.soundEnabled) return;
   try{
-    audioCtx ||= new (window.AudioContext||window.webkitAudioContext)();
-    const o=audioCtx.createOscillator(), g=audioCtx.createGain(), now=audioCtx.currentTime;
-    o.type="sine"; o.frequency.setValueAtTime(720,now); g.gain.setValueAtTime(.055,now); g.gain.exponentialRampToValueAtTime(.001,now+.07);
-    o.connect(g); g.connect(audioCtx.destination); o.start(now); o.stop(now+.075);
+    const ctx=ensureAudioContext();
+    if(!ctx) return;
+    if(ctx.state==="suspended") await ctx.resume();
+    if(ctx.state!=="running") return;
+    const o=ctx.createOscillator(), g=ctx.createGain(), now=ctx.currentTime;
+    o.type="sine"; o.frequency.setValueAtTime(720,now);
+    g.gain.setValueAtTime(.055,now); g.gain.exponentialRampToValueAtTime(.001,now+.07);
+    o.connect(g); g.connect(ctx.destination); o.start(now); o.stop(now+.075);
   }catch(e){}
 }
+// iOS/PWAではAudioContextが中断されることがあるため、実際のタップで毎回復帰を試みる。
+document.addEventListener("pointerdown",()=>{
+  if(!state.soundEnabled) return;
+  try{ const ctx=ensureAudioContext(); if(ctx && ctx.state==="suspended") ctx.resume().catch(()=>{}); }catch(e){}
+},{passive:true});
 function fmtDuration(ms){ if(!Number.isFinite(ms)||ms<0) return "-"; const sec=Math.round(ms/1000),m=Math.floor(sec/60),s=sec%60; return `${m}:${String(s).padStart(2,"0")}`; }
 function startBattle(){ const m=currentMode(), now=Date.now(); if(m.timing.mealStart && !m.timing.mealEnd){showToast("計測中です");return;} m.timing.mealStart=now;m.timing.mealEnd=null;m.timing.battleStart=null;m.timing.laps=[];m.timing.cotton=[]; saveState(); playConfirmSound(); render(); }
 function useCotton(){ const m=currentMode(); if(state.activeMode!=="senkisei") return; if(!m.timing.mealStart || m.timing.mealEnd){showToast("先に計測開始してください");return;} const now=Date.now();m.timing.cotton.push(now-m.timing.mealStart);saveState();playConfirmSound();renderTiming();showToast("わたあめ効果を15:00に更新"); }
@@ -156,9 +171,9 @@ function renderAnalysis(){
   actualFragments.textContent=battleCount?`${(fragments/battleCount).toFixed(1)}個/戦`:"-";
   actualCoreDrops.textContent=`${c.core}個`;
   const exchange=Math.floor(fragments/99), remainder=fragments%99;
-  actualExchangeCores.textContent=`${exchange}核`;
+  actualExchangeCores.textContent=`${exchange}個`;
   actualRemainder.textContent=`${remainder}個`;
-  actualTotalCores.textContent=`${exchange+c.core}核`;
+  actualTotalCores.textContent=`${exchange+c.core}個`;
   chartCurrentCell.textContent=`${yen.format(m.prices.cell)} G`;
   chartTargetCell.textContent=`${yen.format(Math.floor(cellLimitForProfit(m.targetProfit)))} Gまで`;
   chartBreakEvenCell.textContent=`${yen.format(Math.floor(cellLimitForProfit(0)))} Gまで`;
