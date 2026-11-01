@@ -352,7 +352,6 @@ function drawPriceProfitChart(){
   }
   ctx.fillStyle="#58a6ff";ctx.font="400 15px system-ui,-apple-system,BlinkMacSystemFont,\"Yu Gothic\",sans-serif";ctx.textAlign="right";ctx.fillText(`核 ${yen.format(mode.prices.core)}G`,W-R,T+18);
 }
-
 function expectedProfitPerBattle(mode=currentMode()){
   const m=expectedModel();
   const cores=(m.fragmentsPerResult/m.exchangeRate)+m.corePerResult;
