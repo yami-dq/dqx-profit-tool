@@ -52,3 +52,15 @@
   .actual-stats{grid-template-columns:1fr}.actual-stats>div{grid-column:1!important}
   .chart-thresholds strong{font-size:10px}
 }
+
+/* v7.22 About / privacy */
+.about-section{margin-top:22px;padding-top:18px;border-top:1px solid rgba(255,255,255,.10)}
+.about-details{border:1px solid rgba(255,255,255,.12);border-radius:12px;background:rgba(255,255,255,.025);overflow:hidden}
+.about-details summary{cursor:pointer;min-height:48px;display:flex;align-items:center;padding:12px 14px;font-weight:700;color:var(--text,#f4f4f5);list-style-position:inside}
+.about-details summary:focus-visible{outline:2px solid #8b5cf6;outline-offset:-2px}
+.about-content{padding:2px 16px 16px;color:var(--muted,#b6b6c2);font-size:13px;line-height:1.75}
+.about-content h3{margin:14px 0 3px;color:var(--text,#f4f4f5);font-size:13px}
+.about-content p{margin:0}
+.about-note{margin-top:14px!important;font-size:12px;opacity:.78}
+.app-version{text-align:center;margin:14px 0 2px;color:var(--muted,#8f8f9d);font-size:11px;letter-spacing:.04em}
+@media(max-width:560px){.about-section{margin-top:18px}.about-details summary{font-size:13px}.about-content{padding:0 14px 14px;font-size:12px}}
