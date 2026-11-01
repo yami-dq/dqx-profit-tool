@@ -178,6 +178,7 @@ function renderAnalysis(){
   chartTargetCell.textContent=`${yen.format(Math.floor(cellLimitForProfit(m.targetProfit)))} Gまで`;
   chartBreakEvenCell.textContent=`${yen.format(Math.floor(cellLimitForProfit(0)))} Gまで`;
   renderBattleLog();
+  renderDropPieChart();
   if(state.activeTab==="analysis") drawPriceProfitChart();
   if(state.activeTab==="counter") drawRunProfitChart();
 }
@@ -193,6 +194,48 @@ function renderBattleLog(){
     const sign=b.total>=0?"+":"−";
     return `<div class="battle-log-row"><span>${b.number}</span><span class="${cls}">${result}</span><span>${sign}${yen.format(Math.abs(Math.round(b.total)))} G${lap!=null?` / ${fmtDuration(lap)}`:""}</span></div>`;
   }).join("");
+}
+
+function renderDropPieChart(){
+  const canvas=document.getElementById("dropPieChart"), legend=document.getElementById("dropPieLegend"), badge=document.getElementById("dropChartCount");
+  if(!canvas || !legend || !badge) return;
+  const c=counts(), total=currentMode().drops.length;
+  badge.textContent=`${total}戦`;
+  const items=[
+    {key:"45",label:"45個",value:c["45"],color:"#58a6ff"},
+    {key:"75",label:"75個",value:c["75"],color:"#a371f7"},
+    {key:"core",label:"核",value:c.core,color:"#f2cc60"},
+    {key:"wipe",label:"全滅",value:c.wipe,color:"#ff7b72"}
+  ];
+  legend.innerHTML=items.map(x=>{
+    const pct=total?x.value/total*100:0;
+    return `<div class="drop-legend-row"><span class="drop-legend-dot" style="background:${x.color}"></span><span class="drop-legend-name">${x.label}</span><strong>${x.value}回</strong><span>${pct.toFixed(1)}%</span></div>`;
+  }).join("");
+
+  const cssSize=Math.min(300,Math.max(220,canvas.parentElement?.clientWidth||260));
+  const dpr=Math.max(1,Math.min(3,window.devicePixelRatio||1));
+  canvas.style.width=`${cssSize}px`; canvas.style.height=`${cssSize}px`;
+  canvas.width=Math.round(cssSize*dpr); canvas.height=Math.round(cssSize*dpr);
+  const ctx=canvas.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,cssSize,cssSize);
+  const cx=cssSize/2,cy=cssSize/2,r=cssSize*.39,inner=r*.57;
+  if(!total){
+    ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.arc(cx,cy,inner,0,Math.PI*2,true);
+    ctx.fillStyle="#21262d";ctx.fill("evenodd");
+  }else{
+    let start=-Math.PI/2;
+    items.forEach(x=>{
+      if(!x.value) return;
+      const end=start+Math.PI*2*x.value/total;
+      ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,start,end);ctx.closePath();ctx.fillStyle=x.color;ctx.fill();
+      start=end;
+    });
+    ctx.beginPath();ctx.arc(cx,cy,inner,0,Math.PI*2);ctx.fillStyle="#161b22";ctx.fill();
+  }
+  ctx.textAlign="center";ctx.textBaseline="middle";
+  ctx.fillStyle="#f0f6fc";ctx.font="800 28px system-ui,-apple-system,BlinkMacSystemFont,\"Yu Gothic\",sans-serif";
+  ctx.fillText(`${total}`,cx,cy-7);
+  ctx.fillStyle="#8b949e";ctx.font="600 12px system-ui,-apple-system,BlinkMacSystemFont,\"Yu Gothic\",sans-serif";
+  ctx.fillText("戦闘",cx,cy+18);
 }
 
 function drawPriceProfitChart(){
