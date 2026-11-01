@@ -290,8 +290,10 @@ function drawPriceProfitChart(){
   // 横軸の端点だけ通常目盛りとして表示する（単位は軸ラベル側）。
   ctx.fillStyle="#8b949e";ctx.font="400 16px system-ui,-apple-system,BlinkMacSystemFont,\"Yu Gothic\",sans-serif";
   ctx.textAlign="center";ctx.fillText(Number((xMin/10000).toFixed(0)).toString(),sx(xMin),H-B+28);ctx.fillText(Number((xMax/10000).toFixed(0)).toString(),sx(xMax),H-B+28);
-  const drawHLine=(value,color,dash=[])=>{if(value<yMin||value>yMax)return;ctx.save();ctx.strokeStyle=color;ctx.setLineDash(dash);ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(L,sy(value));ctx.lineTo(W-R,sy(value));ctx.stroke();ctx.restore();};
-  drawHLine(0,"#f85149",[8,6]);drawHLine(mode.targetProfit,"#d29922",[8,6]);
+  const drawHLine=(value,color,dash=[],xEnd=W-R)=>{if(value<yMin||value>yMax)return;ctx.save();ctx.strokeStyle=color;ctx.setLineDash(dash);ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(L,sy(value));ctx.lineTo(xEnd,sy(value));ctx.stroke();ctx.restore();};
+  // Horizontal threshold guides stop at their own price intersections.
+  if(Number.isFinite(breakEven)&&breakEven>=xMin&&breakEven<=xMax) drawHLine(0,"#f85149",[8,6],sx(breakEven));
+  if(Number.isFinite(targetCell)&&targetCell>=xMin&&targetCell<=xMax) drawHLine(mode.targetProfit,"#d29922",[8,6],sx(targetCell));
   // 利益軸の補助値。軸目盛りと重ならないようプロット領域の内側に置く。
   if(yMin<=0&&yMax>=0){
     ctx.fillStyle="#f85149";ctx.font="600 16px system-ui,-apple-system,BlinkMacSystemFont,\"Yu Gothic\",sans-serif";ctx.textAlign="left";
@@ -333,8 +335,12 @@ function drawPriceProfitChart(){
   }
   ctx.strokeStyle="#58a6ff";ctx.lineWidth=5;ctx.lineJoin="round";ctx.beginPath();pts.forEach(([x,y],i)=>i?ctx.lineTo(sx(x),sy(y)):ctx.moveTo(sx(x),sy(y)));ctx.stroke();
   if(current>=xMin&&current<=xMax){
-    const cx=sx(current);
-    ctx.strokeStyle="#3fb950";ctx.lineWidth=2;ctx.setLineDash([5,5]);ctx.beginPath();ctx.moveTo(cx,T);ctx.lineTo(cx,H-B);ctx.stroke();ctx.setLineDash([]);
+    const cx=sx(current), currentExpected=calcExpectedProfit(current), cy=sy(currentExpected);
+    // Current price: vertical guide plus horizontal guide from the y-axis to the blue point.
+    ctx.save();ctx.strokeStyle="#3fb950";ctx.lineWidth=2;ctx.setLineDash([5,5]);
+    ctx.beginPath();ctx.moveTo(cx,T);ctx.lineTo(cx,H-B);ctx.stroke();
+    if(currentExpected>=yMin&&currentExpected<=yMax){ctx.beginPath();ctx.moveTo(L,cy);ctx.lineTo(cx,cy);ctx.stroke();}
+    ctx.restore();
     ctx.fillStyle="#3fb950";ctx.font="600 16px system-ui,-apple-system,BlinkMacSystemFont,\"Yu Gothic\",sans-serif";ctx.textAlign="center";
     ctx.fillText(Number((current/10000).toFixed(2)).toString(),cx,priceLabelY(current));
   }
