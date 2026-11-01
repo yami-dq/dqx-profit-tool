@@ -1,22 +1,24 @@
 {
-    "name": "培養利益計算",
-    "short_name": "培養利益",
-    "description": "DQX 輝晶培養 利益計算ツール",
-    "start_url": "./",
-    "display": "standalone",
-    "background_color": "#081826",
-    "theme_color": "#081826",
-    "orientation": "portrait",
-    "icons": [
-      {
-        "src": "icons/icon-192.png",
-        "sizes": "192x192",
-        "type": "image/png"
-      },
-      {
-        "src": "icons/icon-512.png",
-        "sizes": "512x512",
-        "type": "image/png"
-      }
-    ]
-  }
+  "name": "培養利益計算",
+  "short_name": "培養利益",
+  "description": "DQX 輝晶培養 利益計算ツール",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#081826",
+  "theme_color": "#081826",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
