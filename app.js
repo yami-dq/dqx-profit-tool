@@ -74,30 +74,49 @@ function setSoundEnabled(v){ state.soundEnabled=v; saveState(); }
 function changeMealRuns(delta){ currentMode().mealRuns=Math.max(1,Math.min(99,currentMode().mealRuns+delta)); saveState(); render(); }
 
 let audioCtx;
+let audioPrimed=false;
 function ensureAudioContext(){
   const AudioContextClass=window.AudioContext||window.webkitAudioContext;
   if(!AudioContextClass) return null;
-  if(!audioCtx || audioCtx.state==="closed") audioCtx=new AudioContextClass();
+  if(!audioCtx || audioCtx.state==="closed") audioCtx=new AudioContextClass({latencyHint:"interactive"});
   return audioCtx;
+}
+async function unlockAudio(){
+  if(!state.soundEnabled) return null;
+  try{
+    const ctx=ensureAudioContext();
+    if(!ctx) return null;
+    if(ctx.state==="suspended") await ctx.resume();
+    if(!audioPrimed && ctx.state==="running"){
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      g.gain.setValueAtTime(.00001,ctx.currentTime);
+      o.connect(g);g.connect(ctx.destination);
+      o.start(ctx.currentTime);o.stop(ctx.currentTime+.012);
+      audioPrimed=true;
+    }
+    return ctx;
+  }catch(e){ return null; }
 }
 async function playConfirmSound(){
   if(!state.soundEnabled) return;
+  const ctx=await unlockAudio();
+  if(!ctx || ctx.state!=="running") return;
   try{
-    const ctx=ensureAudioContext();
-    if(!ctx) return;
-    if(ctx.state==="suspended") await ctx.resume();
-    if(ctx.state!=="running") return;
-    const o=ctx.createOscillator(), g=ctx.createGain(), now=ctx.currentTime;
-    o.type="sine"; o.frequency.setValueAtTime(720,now);
-    g.gain.setValueAtTime(.055,now); g.gain.exponentialRampToValueAtTime(.001,now+.07);
-    o.connect(g); g.connect(ctx.destination); o.start(now); o.stop(now+.075);
+    const o=ctx.createOscillator(),g=ctx.createGain(),now=ctx.currentTime;
+    o.type="sine";o.frequency.setValueAtTime(720,now);
+    g.gain.setValueAtTime(.001,now);
+    g.gain.exponentialRampToValueAtTime(.06,now+.006);
+    g.gain.exponentialRampToValueAtTime(.001,now+.075);
+    o.connect(g);g.connect(ctx.destination);o.start(now);o.stop(now+.08);
   }catch(e){}
 }
-// iOS/PWAではAudioContextが中断されることがあるため、実際のタップで毎回復帰を試みる。
-document.addEventListener("pointerdown",()=>{
-  if(!state.soundEnabled) return;
-  try{ const ctx=ensureAudioContext(); if(ctx && ctx.state==="suspended") ctx.resume().catch(()=>{}); }catch(e){}
-},{passive:true});
+// iOS/PWA: resume/prime audio directly from each user gesture.
+function primeAudioFromGesture(){ unlockAudio(); }
+document.addEventListener("pointerdown",primeAudioFromGesture,{passive:true});
+document.addEventListener("touchstart",primeAudioFromGesture,{passive:true});
+document.addEventListener("visibilitychange",()=>{
+  if(document.visibilityState==="visible") audioPrimed=false;
+});
 function fmtDuration(ms){ if(!Number.isFinite(ms)||ms<0) return "-"; const sec=Math.round(ms/1000),m=Math.floor(sec/60),s=sec%60; return `${m}:${String(s).padStart(2,"0")}`; }
 function startBattle(){ const m=currentMode(), now=Date.now(); if(m.timing.mealStart && !m.timing.mealEnd){showToast("計測中です");return;} m.timing.mealStart=now;m.timing.mealEnd=null;m.timing.battleStart=null;m.timing.laps=[];m.timing.cotton=[]; saveState(); playConfirmSound(); render(); }
 function useCotton(){ const m=currentMode(); if(state.activeMode!=="senkisei") return; if(!m.timing.mealStart || m.timing.mealEnd){showToast("先に計測開始してください");return;} const now=Date.now();m.timing.cotton.push(now-m.timing.mealStart);saveState();playConfirmSound();renderTiming();showToast("わたあめ効果を15:00に更新"); }
@@ -142,7 +161,7 @@ function renderTiming(){
   battleTimer.textContent=t.mealStart&&!t.mealEnd?fmtDuration(now-t.mealStart):t.mealEnd?`終了 ${fmtDuration(t.mealEnd-t.mealStart)}`:"待機中";
   const end=t.mealEnd||now, mealMs=t.mealStart?end-t.mealStart:null;
   mealTime.textContent=mealMs!=null?fmtDuration(mealMs):"-";
-  const valid=t.laps.filter(v=>Number.isFinite(v)); avgBattleTime.textContent=valid.length?fmtDuration(valid.reduce((a,b)=>a+b,0)/valid.length):"-";
+  const battles=m.drops.length; avgBattleTime.textContent=(battles>0 && mealMs!=null)?fmtDuration(mealMs/battles):"-";
   const cottonVisible=state.activeMode==="senkisei";
   cottonBtn?.classList.toggle("hidden",!cottonVisible); cottonTimer?.classList.toggle("hidden",!cottonVisible); timerTools?.classList.toggle("no-cotton",!cottonVisible);
   if(cottonVisible){
