@@ -1,3 +1,32 @@
+// v7.27 simple access gate.
+// This is a lightweight sharing gate, not server-side authentication.
+// Change this one value when you want to rotate the Discord passphrase.
+const ACCESS_PHRASE="kakera";
+const ACCESS_KEY="dqx-profit-access-v1";
+function initAccessGate(){
+  const gate=document.getElementById("accessGate"),input=document.getElementById("accessPhrase");
+  const submit=document.getElementById("accessSubmit"),error=document.getElementById("accessError");
+  if(!gate||!input||!submit) return;
+  if(localStorage.getItem(ACCESS_KEY)==="ok"){gate.hidden=true;return;}
+  gate.hidden=false;
+  document.documentElement.classList.add("access-locked");
+  const tryOpen=()=>{
+    if(input.value===ACCESS_PHRASE){
+      localStorage.setItem(ACCESS_KEY,"ok");
+      gate.hidden=true;document.documentElement.classList.remove("access-locked");
+      input.value="";error.textContent="";
+    }else{
+      error.textContent="合言葉が違います。";
+      input.select();
+    }
+  };
+  submit.addEventListener("click",tryOpen);
+  input.addEventListener("keydown",e=>{if(e.key==="Enter")tryOpen();});
+  setTimeout(()=>input.focus(),0);
+}
+if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",initAccessGate);
+else initAccessGate();
+
 const STORAGE_KEY = "dqx-profit-v7.7";
 const PREV75_KEY = "dqx-profit-v7.5";
 const PREV74_KEY = "dqx-profit-v7.4";
@@ -337,7 +366,10 @@ function drawPriceProfitChart(){
   if(current>=xMin&&current<=xMax){
     const cx=sx(current), currentExpected=calcExpectedProfit(current), cy=sy(currentExpected);
     // Current price: vertical guide plus horizontal guide from the y-axis to the blue point.
-    ctx.save();ctx.strokeStyle="#3fb950";ctx.lineWidth=2;ctx.setLineDash([5,5]);
+    ctx.save();
+    // Keep the green guide strictly inside the graph plotting rectangle.
+    ctx.beginPath();ctx.rect(L,T,W-L-R,H-T-B);ctx.clip();
+    ctx.strokeStyle="#3fb950";ctx.lineWidth=2;ctx.setLineDash([5,5]);
     ctx.beginPath();ctx.moveTo(cx,T);ctx.lineTo(cx,H-B);ctx.stroke();
     if(currentExpected>=yMin&&currentExpected<=yMax){ctx.beginPath();ctx.moveTo(L,cy);ctx.lineTo(cx,cy);ctx.stroke();}
     ctx.restore();

@@ -10,6 +10,18 @@
   <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
 </head>
 <body>
+<div id="accessGate" class="access-gate" hidden>
+  <div class="access-gate-card">
+    <div class="access-gate-title">輝晶獣 利益シミュレーター</div>
+    <p>このツールは現在、限定公開中です。</p>
+    <label for="accessPhrase">合言葉</label>
+    <input id="accessPhrase" type="password" autocomplete="off" inputmode="text" placeholder="合言葉を入力">
+    <button id="accessSubmit" type="button">開く</button>
+    <div id="accessError" class="access-error" aria-live="polite"></div>
+    <p class="access-gate-note">一度認証すると、この端末では次回から入力を省略します。</p>
+  </div>
+</div>
+
   <div class="app">
     <header class="app-header">
       <div>
@@ -156,7 +168,7 @@
               <p class="about-note">本ツールは個人制作の非公式ツールであり、ゲーム運営・開発元とは関係ありません。</p>
             </div>
           </details>
-          <div class="app-version">DQX 輝晶獣 利益シミュレーター　v7.26</div>
+          <div class="app-version">DQX 輝晶獣 利益シミュレーター　v7.27</div>
         </section>
       </section>
 
