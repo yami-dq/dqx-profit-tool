@@ -1,4 +1,4 @@
-// v7.29 lightweight access gate.
+// v7.30 lightweight access gate.
 // Change ACCESS_PHRASE to rotate the Discord passphrase.
 // This is client-side only; it is a sharing deterrent, not strong authentication.
 const ACCESS_PHRASE="kakera";
@@ -35,8 +35,8 @@ const yen = new Intl.NumberFormat("ja-JP");
 const state = {
   activeMode: "kisei", activeTab: "counter", soundEnabled: true,
   modes: {
-    kisei: { label:"輝晶核", saleMethod:"bazaar", prices:{core:1280000,fragment:15000,cell:103000}, mealRuns:7, targetProfit:500000, drops:[], timing:{mealStart:null,battleStart:null,laps:[],cotton:[],mealEnd:null} },
-    senkisei: { label:"閃輝晶核", saleMethod:"bazaar", prices:{core:0,fragment:0,cell:0}, mealRuns:5, targetProfit:500000, drops:[], timing:{mealStart:null,battleStart:null,laps:[],cotton:[],mealEnd:null} }
+    kisei: { label:"輝晶核", saleMethod:"bazaar", prices:{core:1280000,fragment:15000,cell:103000}, mealRuns:7, targetProfit:500000, drops:[], timing:{mealStart:null,battleStart:null,laps:[],cotton:[],mealEnd:null,pausedAt:null,pausedTotal:0} },
+    senkisei: { label:"閃輝晶核", saleMethod:"bazaar", prices:{core:0,fragment:0,cell:0}, mealRuns:5, targetProfit:500000, drops:[], timing:{mealStart:null,battleStart:null,laps:[],cotton:[],mealEnd:null,pausedAt:null,pausedTotal:0} }
   }
 };
 
@@ -143,16 +143,33 @@ document.addEventListener("visibilitychange",()=>{
   if(document.visibilityState==="visible") audioPrimed=false;
 });
 function fmtDuration(ms){ if(!Number.isFinite(ms)||ms<0) return "-"; const sec=Math.round(ms/1000),m=Math.floor(sec/60),s=sec%60; return `${m}:${String(s).padStart(2,"0")}`; }
-function startBattle(){ const m=currentMode(), now=Date.now(); if(m.timing.mealStart && !m.timing.mealEnd){showToast("計測中です");return;} m.timing.mealStart=now;m.timing.mealEnd=null;m.timing.battleStart=null;m.timing.laps=[];m.timing.cotton=[]; saveState(); playConfirmSound(); render(); }
+// 一時停止中の時間を除いた実計測時間（ms）。わたあめ残り時間は実時間で進むため対象外。
+function isMeasuring(t=currentMode().timing){ return !!(t.mealStart && !t.mealEnd); }
+function isPaused(t=currentMode().timing){ return isMeasuring(t) && t.pausedAt!=null; }
+function activeElapsed(t=currentMode().timing,now=Date.now()){
+  if(!t.mealStart) return null;
+  const end=t.mealEnd||(t.pausedAt!=null?t.pausedAt:now);
+  return Math.max(0,end-t.mealStart-(t.pausedTotal||0));
+}
+function resumeTiming(t,now=Date.now()){ if(t.pausedAt!=null){ t.pausedTotal=(t.pausedTotal||0)+(now-t.pausedAt); t.pausedAt=null; } }
+function startBattle(){ const m=currentMode(), now=Date.now(); if(isMeasuring(m.timing)){showToast(isPaused(m.timing)?"一時停止中です（再開で続行）":"計測中です");return;} m.timing.mealStart=now;m.timing.mealEnd=null;m.timing.battleStart=null;m.timing.laps=[];m.timing.cotton=[];m.timing.pausedAt=null;m.timing.pausedTotal=0; saveState(); playConfirmSound(); render(); }
+function togglePause(){
+  const t=currentMode().timing, now=Date.now();
+  if(!isMeasuring(t)){showToast("計測が始まっていません");return;}
+  if(t.pausedAt!=null){ resumeTiming(t,now); showToast("計測を再開しました"); }
+  else { t.pausedAt=now; showToast("計測を一時停止しました"); }
+  saveState(); playConfirmSound(); renderTiming();
+}
 function useCotton(){ const m=currentMode(); if(state.activeMode!=="senkisei") return; if(!m.timing.mealStart || m.timing.mealEnd){showToast("先に計測開始してください");return;} const now=Date.now();m.timing.cotton.push(now-m.timing.mealStart);saveState();playConfirmSound();renderTiming();showToast("わたあめ効果を15:00に更新"); }
-function finishMeal(){ const m=currentMode(); if(!m.timing.mealStart || m.timing.mealEnd){showToast("計測が始まっていません");return;} m.timing.mealEnd=Date.now();m.timing.battleStart=null;saveState();playConfirmSound();render(); }
+function finishMeal(){ const m=currentMode(); if(!m.timing.mealStart || m.timing.mealEnd){showToast("計測が始まっていません");return;} const now=Date.now(); resumeTiming(m.timing,now); m.timing.mealEnd=now;m.timing.battleStart=null;saveState();playConfirmSound();render(); }
 function addDrop(type){
   const m=currentMode(), now=Date.now(); m.drops.push(type);
-  m.timing.laps.push(m.timing.mealStart && !m.timing.mealEnd ? now-m.timing.mealStart : null);
+  if(isPaused(m.timing)){ resumeTiming(m.timing,now); showToast("計測を再開しました"); }
+  m.timing.laps.push(isMeasuring(m.timing) ? activeElapsed(m.timing,now) : null);
   saveState(); playConfirmSound(); flashInput(type); render();
 }
 function undoLast(){ if(!currentMode().drops.length) return; const m=currentMode();m.drops.pop();m.timing.laps.pop();saveState();render(); }
-function resetRun(){ if(!confirm(`${currentMode().label} の今回の周回記録をリセットしますか？\n価格設定は残ります。`)) return; const m=currentMode();m.drops=[];m.timing={mealStart:null,battleStart:null,laps:[],cotton:[],mealEnd:null}; saveState(); render(); }
+function resetRun(){ if(!confirm(`${currentMode().label} の今回の周回記録をリセットしますか？\n価格設定は残ります。`)) return; const m=currentMode();m.drops=[];m.timing={mealStart:null,battleStart:null,laps:[],cotton:[],mealEnd:null,pausedAt:null,pausedTotal:0}; saveState(); render(); }
 function resetAll(){ resetRun(); }
 function updatePrices(){ const m=currentMode(); m.prices.core=+corePrice.value||0; m.prices.fragment=+fragmentPrice.value||0; m.prices.cell=+cellPrice.value||0; saveState(); renderAnalysis(); }
 function updateTarget(){ currentMode().targetProfit=Math.max(0,+targetProfit.value||0); saveState(); renderAnalysis(); }
@@ -183,8 +200,10 @@ function render(){
 
 function renderTiming(){
   const m=currentMode(),t=m.timing,now=Date.now();
-  battleTimer.textContent=t.mealStart&&!t.mealEnd?fmtDuration(now-t.mealStart):t.mealEnd?`終了 ${fmtDuration(t.mealEnd-t.mealStart)}`:"待機中";
-  const end=t.mealEnd||now, mealMs=t.mealStart?end-t.mealStart:null;
+  const mealMs=activeElapsed(t,now), paused=isPaused(t);
+  battleTimer.textContent=paused?`一時停止中 ${fmtDuration(mealMs)}`:isMeasuring(t)?fmtDuration(mealMs):t.mealEnd?`終了 ${fmtDuration(mealMs)}`:"待機中";
+  battleTimer.classList.toggle("paused",paused);
+  if(typeof pauseBtn!=="undefined"){ pauseBtn.textContent=paused?"再開":"一時停止"; pauseBtn.classList.toggle("resume",paused); pauseBtn.disabled=!isMeasuring(t); }
   mealTime.textContent=mealMs!=null?fmtDuration(mealMs):"-";
   const battles=m.drops.length; avgBattleTime.textContent=(battles>0 && mealMs!=null)?fmtDuration(mealMs/battles):"-";
   const cottonVisible=state.activeMode==="senkisei";

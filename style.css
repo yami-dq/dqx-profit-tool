@@ -13,9 +13,9 @@
 /* v7.12 chart spacing refinement */
 .chart-card .chart-note{margin-top:12px}
 
-.timer-tools{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:7px;margin:3px 0 7px}.timer-btn{min-height:43px;border:1px solid var(--border);border-radius:8px;background:var(--panel);color:var(--text);font-weight:750;font-size:14px;touch-action:manipulation}.timer-btn.primary{border-color:var(--blue2);color:#58a6ff;background:#1f6feb18}.timer-btn.finish{color:#d29922}.battle-timer{text-align:center;color:#58a6ff;font-variant-numeric:tabular-nums;font-size:12px;min-height:19px;margin-bottom:5px}.actual-stats strong{font-variant-numeric:tabular-nums}@media(max-width:420px){.timer-btn{font-size:13px;min-height:41px}.actual-stats>div:nth-last-child(-n+4){grid-column:1/-1}}
+.timer-tools{display:grid;grid-template-columns:1.15fr 1fr 1fr 1fr;gap:7px;margin:3px 0 7px}.timer-btn{min-height:43px;border:1px solid var(--border);border-radius:8px;background:var(--panel);color:var(--text);font-weight:750;font-size:14px;touch-action:manipulation}.timer-btn.primary{border-color:var(--blue2);color:#58a6ff;background:#1f6feb18}.timer-btn.finish{color:#d29922}.battle-timer{text-align:center;color:#58a6ff;font-variant-numeric:tabular-nums;font-size:12px;min-height:19px;margin-bottom:5px}.actual-stats strong{font-variant-numeric:tabular-nums}@media(max-width:420px){.timer-btn{font-size:13px;min-height:41px}.actual-stats>div:nth-last-child(-n+4){grid-column:1/-1}}
 
-.timer-tools.no-cotton{grid-template-columns:1fr 1fr}.cotton-active{color:#3fb950}.cotton-warning{color:#d29922}.cotton-expired{color:#ff7b72}
+.timer-tools.no-cotton{grid-template-columns:1.15fr 1fr 1fr}.cotton-active{color:#3fb950}.cotton-warning{color:#d29922}.cotton-expired{color:#ff7b72}
 
 .timer-status-row{display:flex;align-items:center;justify-content:center;gap:12px;min-height:19px;margin-bottom:5px}.timer-status-row .battle-timer{margin-bottom:0;min-height:0}.cotton-timer{font-size:12px;font-variant-numeric:tabular-nums;font-weight:600}.cotton-timer.cotton-active{color:#3fb950}.cotton-timer.cotton-warning{color:#d29922}.cotton-timer.cotton-expired{color:#ff7b72}
 
@@ -98,3 +98,5 @@
 .access-gate-card button{width:100%;min-height:48px;margin-top:12px;border:0;border-radius:10px;background:#238636;color:#fff;font-size:15px;font-weight:800;cursor:pointer}
 .access-error{min-height:20px;margin-top:9px;color:#ff7b72;font-size:13px}
 .access-gate-note{margin:5px 0 0!important;font-size:11px!important}
+
+.timer-btn.pause{color:#a371f7}.timer-btn.pause.resume{border-color:#a371f7;background:#a371f71f;color:#d2a8ff}.timer-btn:disabled{opacity:.45}.battle-timer.paused{color:#a371f7}
